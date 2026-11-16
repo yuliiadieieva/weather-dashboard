@@ -615,6 +615,8 @@ table.ht tbody tr:hover td{background:var(--surface-2)}
  .ctlrow>.days .daysep{padding:0 2px;letter-spacing:.08em}
  .ctlrow>.seg,.ctlrow>#metric{flex:none}
 }
+
+.evh .zs .rl{flex-basis:100%;color:var(--muted);font-size:.74rem}
 </style>
 
 <div class="wrap">
@@ -973,14 +975,23 @@ const dAdd=(iso,n)=>{const t=new Date(iso+"T12:00");t.setDate(t.getDate()+n);ret
 /* count events, not locations: the same risk on consecutive days counts once per country */
 function evN(list,lvl){const by={};list.filter(a=>!lvl||a.level===lvl).forEach(a=>{const c=DEP[a.depot].country;(by[c]=by[c]||[]).push(a)});return Object.values(by).reduce((t,l)=>t+groupEvents(l).length,0)}
 function groupEvents(list){
-  /* one event = same rule (and official label) on consecutive days, across all locations */
-  const by={};list.forEach(a=>{const k=a.rule+"|"+(a.official?a.label:"");(by[k]=by[k]||[]).push(a)});
+  /* one event = one kind of weather on consecutive days, across all locations.
+     Forecast flags merge by type (frost, cold day, colder than normal and cold snap are one Cold event);
+     official warnings stay one event per warning. */
+  const by={};list.forEach(a=>{const k=a.official?"o|"+a.label:"f|"+a.type;(by[k]=by[k]||[]).push(a)});
   const ev=[];Object.values(by).forEach(arr=>{const ds=[...new Set(arr.map(a=>a.date))].sort();let cur=null;
     ds.forEach(d=>{if(cur&&dAdd(cur.end,1)===d)cur.end=d;else{cur={start:d,end:d,items:[]};ev.push(cur)}cur.items.push(...arr.filter(a=>a.date===d))})});
-  ev.forEach(e=>{const a=e.items[0];e.label=a.label.replace(" (outlook)","");e.type=a.type;e.official=!!a.official;e.level=e.items.some(x=>x.level==="alert")?"alert":"watch";
+  const SPELL=/^(coldsnap|heatwave|damp)/;
+  ev.forEach(e=>{const head=[...e.items].sort((x,y)=>((y.level==="alert")-(x.level==="alert"))||(SPELL.test(y.rule)-SPELL.test(x.rule))||(Math.abs(numOf(y.detail))-Math.abs(numOf(x.detail))))[0];
+    e.label=head.label.replace(" (outlook)","");e.type=head.type;e.official=!!head.official;e.level=e.items.some(x=>x.level==="alert")?"alert":"watch";
+    e.rules=[...new Set(e.items.map(x=>x.label.replace(" (outlook)","")))].filter(l=>l!==e.label);
     e.locs=[...new Set(e.items.map(x=>x.depot))];e.isNew=e.items.some(x=>x.new);e.outlook=e.items.every(x=>x.outlook)});
   ev.sort((x,y)=>(y.official-x.official)||((y.level==="alert")-(x.level==="alert"))||x.start.localeCompare(y.start)||y.locs.length-x.locs.length);
   return ev}
+function numOf(t){const m=String(t||"").match(/-?\d+(\.\d+)?/);return m?+m[0]:0}
+/* one line per location: the strongest reading of each rule, e.g. "Frost -1.9°C · Cold day 3.6°C · Colder than normal -4.5°C vs normal" */
+function evDetail(items){const by={};items.forEach(x=>{const l=x.label.replace(" (outlook)","");if(!by[l]||Math.abs(numOf(x.detail))>Math.abs(numOf(by[l].detail)))by[l]=x});
+  return Object.values(by).sort((a,b)=>(b.level==="alert")-(a.level==="alert")).map(x=>{const v=x.detail.includes("threshold")?x.detail.split(" (")[0]:(x.detail.match(/\(([^()]*)\)$/)||[0,x.detail])[1].replace(/ Nov\b| Dec\b| Jan\b/g,m=>m);return `${x.label.replace(" (outlook)","")} ${v}`}).join(" · ")}
 function renderFeed(){
   document.getElementById("flagstitle").textContent=`Flags · ${CTRY[V.c].name}`;
   const r=document.getElementById("risk");
@@ -1003,9 +1014,9 @@ function renderFeed(){
       ${one?`<div class="evh one" data-s="${e.locs[0]}" data-d="${e.items[0].date}" tabindex="0" role="button" title="Show ${esc(DEP[e.locs[0]].name)} on the map">`:`<button class="evh" aria-expanded="${open}">`}${aic(e.type)}<span class="pill ${e.level}">${e.level}</span>
         <span class="t">${e.isNew?'<span class="newp">New</span> ':""}${e.official?'<span class="kind off">Official</span>':""}${esc(e.label)}${one?` · ${esc(DEP[e.locs[0]].name)}`:""}</span>
         <span class="when">${span(e)}</span>
-        <span class="zs">${one?esc(e.items[0].detail):`<b>${e.locs.length} locations</b> · `+Object.entries(zs).map(([z,n])=>`<span class="zt"><i style="background:${zoneCol(z)}"></i>${esc(z)} ${n}</span>`).join(" ")}</span>${one?`<a class="src" href="${su}" target="_blank" rel="noopener">${sn}${EXT}</a></div>`:`<span class="chev">${CHEV}</span></button>`}
+        <span class="zs">${one?esc(evDetail(e.items)):`${e.rules.length?`<span class="rl">Also: ${esc(e.rules.join(", ").toLowerCase().replace(/^./,c=>c.toUpperCase()))}</span>`:""}<b>${e.locs.length} locations</b> · `+Object.entries(zs).map(([z,n])=>`<span class="zt"><i style="background:${zoneCol(z)}"></i>${esc(z)} ${n}</span>`).join(" ")}</span>${one?`<a class="src" href="${su}" target="_blank" rel="noopener">${sn}${EXT}</a></div>`:`<span class="chev">${CHEV}</span></button>`}
       ${one?"":`<div class="evb"${open?"":" hidden"}>${e.locs.map(l=>{const its=e.items.filter(x=>x.depot===l);const x=its[0];
-        return `<div class="item lv-${x.level}${st.sel===l?" on":""}" data-s="${l}" data-d="${x.date}" tabindex="0" role="button" title="Show ${esc(DEP[l].name)} on the map"><i class="zd" style="background:${zoneCol(DEP[l].zone)}"></i><span class="t">${esc(DEP[l].name)} <span class="muted">· ${its.length>1?`${fmtDay(its[0].date)} to ${fmtDay(its[its.length-1].date)}`:fmtDay(x.date)}</span></span><a class="src" href="${srcOf(x)[1]}" target="_blank" rel="noopener">${srcOf(x)[0]}${EXT}</a><span class="d">${esc(x.detail)}</span></div>`}).join("")}</div>`}</div>`};
+        return `<div class="item lv-${x.level}${st.sel===l?" on":""}" data-s="${l}" data-d="${x.date}" tabindex="0" role="button" title="Show ${esc(DEP[l].name)} on the map"><i class="zd" style="background:${zoneCol(DEP[l].zone)}"></i><span class="t">${esc(DEP[l].name)} <span class="muted">· ${its.length>1?`${fmtDay(its[0].date)} to ${fmtDay(its[its.length-1].date)}`:fmtDay(x.date)}</span></span><a class="src" href="${srcOf(x)[1]}" target="_blank" rel="noopener">${srcOf(x)[0]}${EXT}</a><span class="d">${esc(evDetail(its))}</span></div>`}).join("")}</div>`}</div>`};
   const wk=list.filter(a=>!a.outlook),ol=list.filter(a=>a.outlook);
   const sect=(items,title,sub,cls)=>{if(!items.length)return"";const off=groupEvents(items.filter(a=>a.official)),fc=groupEvents(items.filter(a=>!a.official));
     return `<section class="fsec ${cls}"><div class="fsh"><b>${title}</b><span>${sub}</span></div>${off.length?`<div class="fgh off"><b>Official warnings</b><span>Issued by ${V.c==="UK"?"the Met Office, Environment Agency and UKHSA":["ME","SA"].includes(V.c)?"the national met services":"the national met service via Meteoalarm"}</span></div>${off.map(card).join("")}`:""}${fc.length?`<div class="fgh fc"><b>Forecast flags</b><span>Expected from the forecast against our thresholds. Not an official warning yet</span></div>${fc.map(card).join("")}`:""}</section>`};
