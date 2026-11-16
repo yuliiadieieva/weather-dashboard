@@ -132,6 +132,9 @@ a.jump.jw{color:#FFC46B!important;text-decoration-color:#FFC46B}
 .kpi .tdv{display:flex;align-items:center;gap:10px}
 .kpi .tdv svg{width:40px;height:40px;flex:none}
 .kpi .d.ol{font-size:.72rem;opacity:.85}
+.kpi .kvi{display:flex;align-items:center;gap:8px}
+.kpi .kic{width:20px;height:20px;flex:none}
+.kpi .kdate{color:var(--accent);font-weight:600}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;gap:2px;min-width:0}
 .kpi .k{font:700 .68rem var(--body);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
 .kpi .v{font:700 1.45rem var(--body);letter-spacing:-.01em}
@@ -1166,12 +1169,19 @@ function renderOverview(){
   const tot=k=>rows.reduce((s,r)=>s+r[k],0);
   const all=S.depots,cn=rows.reduce((b,r)=>!b||r.cn.v<b.cn.v?r:b,null),wd=rows.reduce((b,r)=>!b||r.wd.v>b.wd.v?r:b,null);
   const wherE=d=>esc([d.zone&&d.zone!==CTRY[d.country].name?d.zone:"",CTRY[d.country].name].filter(Boolean).join(", "));
-  const T=(k,v,d,cls="")=>`<div class="kpi ${cls}"><div class="k">${k}</div><div class="v num">${v}</div><div class="d">${d}</div></div>`;
-  document.getElementById("ov-kpis").innerHTML=T("Alerts · next 7 days",tot("na"),`${tot("na")?(n=>"Across "+n+" "+(n===1?"country":"countries"))(rows.filter(r=>r.na).length):"None across the group"}`,tot("na")?"ov-a":"")+
-    T("Watch flags · next 7 days",tot("nw"),`Plus ${tot("no")} in the outlook (days 8 to 15)`,tot("nw")?"ov-w":"")+
-    T("Coldest night in the group",`${fmtV("tmin",cn.cn.v)}°C`,`${esc(cn.cn.d.name)} · ${fmtDay(S.dates[cn.cn.i])}</div><div class="d loc">${wherE(cn.cn.d)}`)+
-    T("Hottest day in the group",`${fmtV("tmax",wd.wd.v)}°C`,`${esc(wd.wd.d.name)} · ${fmtDay(S.dates[wd.wd.i])}</div><div class="d loc">${wherE(wd.wd.d)}`)+
-    T("Locations",all.length,`${S.countries.length} markets`);
+  const KI={
+    a:'<svg class="kic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#E5484D"/><path d="M12 6.8v6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17" r="1.4" fill="#fff"/></svg>',
+    w:'<svg class="kic" viewBox="0 0 24 24"><path d="M12 2.8 22.4 20.6H1.6z" fill="#F5A524" stroke="#F5A524" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 9v5" stroke="#1A1300" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1.25" fill="#1A1300"/></svg>',
+    m:'<svg class="kic" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" fill="#7FA6CF"/></svg>',
+    s:'<svg class="kic" viewBox="0 0 24 24" fill="none" stroke="#F5A524" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="#F5A524"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>',
+    l:'<svg class="kic" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7z" fill="var(--accent)"/><circle cx="12" cy="9" r="2.6" fill="var(--surface)"/></svg>'};
+  const T=(k,v,d,cls="",ic="")=>`<div class="kpi ${cls}"><div class="k">${k}</div><div class="v num kvi">${ic?KI[ic]:""}<span>${v}</span></div><div class="d">${d}</div></div>`;
+  const kd=i=>`<span class="kdate">${fmtDay(S.dates[i])}</span>`;
+  document.getElementById("ov-kpis").innerHTML=T("Alerts · next 7 days",tot("na"),`${tot("na")?(n=>"Across "+n+" "+(n===1?"country":"countries"))(rows.filter(r=>r.na).length):"None across the group"}`,tot("na")?"ov-a":"","a")+
+    T("Watch flags · next 7 days",tot("nw"),`Plus ${tot("no")} in the outlook (days 8 to 15)`,tot("nw")?"ov-w":"","w")+
+    T("Coldest night in the group",`${fmtV("tmin",cn.cn.v)}°C`,`${esc(cn.cn.d.name)} · ${kd(cn.cn.i)}</div><div class="d loc">${wherE(cn.cn.d)}`,"","m")+
+    T("Hottest day in the group",`${fmtV("tmax",wd.wd.v)}°C`,`${esc(wd.wd.d.name)} · ${kd(wd.wd.i)}</div><div class="d loc">${wherE(wd.wd.d)}`,"","s")+
+    T("Locations",all.length,`${S.countries.length} markets`,"","l");
   const sg=v=>`${v>=0?"+":""}${v.toFixed(1)}°C`;
   document.getElementById("ov").innerHTML=`<thead><tr><th>Country</th><th>Locations</th><th>Alerts</th><th>Watch</th><th>Outlook</th><th>vs normal</th><th>Coldest night</th><th>Warmest day</th><th>Main risk</th><th>First flag</th></tr></thead><tbody>`+
     rows.map(r=>`<tr data-c="${r.c}" tabindex="0" role="link" title="Open ${CTRY[r.c].name}"><td><b>${CTRY[r.c].name}</b></td><td class="num">${r.n}</td><td class="num">${r.na?`<span class="cnt a">${r.na}</span>`:'<span class="muted">0</span>'}</td><td class="num">${r.nw?`<span class="cnt w">${r.nw}</span>`:'<span class="muted">0</span>'}</td><td class="num muted">${r.no}</td><td class="num"><span class="hv" style="background:color-mix(in srgb,${colour("anom",r.an)} 30%,transparent)">${sg(r.an)}</span></td><td class="ovt"><svg class="ovi" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" fill="#7FA6CF"/></svg><b class="num">${fmtV("tmin",r.cn.v)}°C</b> <span class="muted">${esc(r.cn.d.name)}</span></td><td class="ovt"><svg class="ovi" viewBox="0 0 24 24" fill="none" stroke="#F5A524" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="#F5A524"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg><b class="num">${fmtV("tmax",r.wd.v)}°C</b> <span class="muted">${esc(r.wd.d.name)}</span></td><td>${r.top?`${aic(r.top)} ${r.top}`:'<span class="muted">Calm</span>'}</td><td>${r.first?fmtDay(r.first):'<span class="muted">–</span>'}</td></tr>`).join("")+"</tbody>";
