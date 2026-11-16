@@ -605,6 +605,16 @@ table.ht tbody tr:hover td{background:var(--surface-2)}
 @media (prefers-reduced-motion:reduce){.hdr .meta .runst.run i{animation:none}}
 @keyframes tpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
 @keyframes tdrop{0%,100%{stroke-dashoffset:0}50%{stroke-dashoffset:-4.5}}
+
+/* keep the metric switch and the day strip on one line on every tab; the strip scrolls if it runs out of room */
+@media (min-width:900px){
+ .ctlrow{flex-wrap:nowrap}
+ .ctlrow>.days{flex:1 1 auto;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding:3px 2px}
+ .ctlrow>.days .day{flex:none;padding:5px 7px;min-width:38px}
+ .ctlrow>.days .day.l-watch,.ctlrow>.days .day.l-alert{padding:4px 6px}
+ .ctlrow>.days .daysep{padding:0 2px;letter-spacing:.08em}
+ .ctlrow>.seg,.ctlrow>#metric{flex:none}
+}
 </style>
 
 <div class="wrap">
