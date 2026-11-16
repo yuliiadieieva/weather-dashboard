@@ -929,10 +929,9 @@ function renderMap(){
   document.getElementById("legend").innerHTML=`<span class="num">${s[0][0]}</span><span class="bar" style="background:linear-gradient(90deg,${s.map(x=>x[1]).join(",")})"></span><span class="num">${s[s.length-1][0]}${METRICS[m].unit}</span>`;
   const tip=document.getElementById("tip"),wrap=svg.parentNode;
   svg.querySelectorAll("g.pt").forEach(g=>{const d=DEP[g.dataset.s],sr=S.series[d.slug];
-    const show=()=>{const fl=flagsFor(d.slug,iso);tip.innerHTML=`<b>${esc(d.name)}</b><br>${WC[sr.code[st.day]]||""} · ${fmtV("tmax",sr.tmax[st.day])}° / ${fmtV("tmin",sr.tmin[st.day])}°C<br>Rain ${fmtV("rain",sr.rain[st.day])} mm · gusts ${Math.round(sr.gust[st.day])} mph<br>${fmtV("anom",sr.anom[st.day])}°C vs normal${fl.length?`<br><b>${esc(fl.map(a=>a.label).join(", "))}</b>`:""}`;tip.hidden=false;
-      const b=g.getBoundingClientRect(),w=wrap.getBoundingClientRect();let x=b.right-w.left+8,y=b.top-w.top-6;if(x+240>w.width)x=b.left-w.left-tip.offsetWidth-8;tip.style.left=Math.max(0,x)+"px";tip.style.top=Math.max(0,y)+"px"};
-    g.onmouseenter=show;g.onfocus=show;g.onmouseleave=()=>{tip.hidden=true};g.onblur=()=>{tip.hidden=true};
-    g.onclick=()=>{st.sel=st.sel===d.slug?null:d.slug;st.ping=false;tip.hidden=true;renderMap();renderDetail();highlightRow();document.querySelectorAll("#feed .item").forEach(x=>x.classList.toggle("on",x.dataset.s===st.sel))};
+    const show=()=>showTipAt(g,d.slug,st.day,st.sel===d.slug?"Click to clear the selection":"Click to select this depot");
+    g.onmouseenter=show;g.onfocus=show;g.onmouseleave=hideTip;g.onblur=hideTip;
+    g.onclick=()=>{st.sel=st.sel===d.slug?null:d.slug;st.ping=false;hideTip();renderMap();renderDetail();highlightRow();document.querySelectorAll("#feed .item").forEach(x=>x.classList.toggle("on",x.dataset.s===st.sel))};
     g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();g.onclick()}}});
 }
 function renderDetail(){
@@ -1056,14 +1055,15 @@ function renderGrid(){
   document.getElementById("tabletitle").textContent=`${S.dates.length}-day forecast · ${METRICS[m].title} · ${CTRY[V.c].name}`;
 }
 const f1=v=>v==null?"–":(Math.round(v*10)/10).toFixed(1).replace(/\.0$/,"");
-function showTip(c){
-  const tip=document.getElementById("ctip"),slug=c.dataset.s,i=+c.dataset.i,d=DEP[slug],s=S.series[slug],iso=S.dates[i],fl=flagsFor(slug,iso);
+function showTip(c){showTipAt(c,c.dataset.s,+c.dataset.i,"Click to show this day on the map")}
+function showTipAt(c,slug,i,note){
+  const tip=document.getElementById("ctip"),d=DEP[slug],s=S.series[slug],iso=S.dates[i],fl=flagsFor(slug,iso);
   const gulf=["ME","SA"].includes(d.country),an=s.anom[i],row=(k,v)=>`<div><span>${k}</span><b class="num">${v}</b></div>`;
   tip.innerHTML=`<div class="tt-h"><b>${esc(d.name)}</b><span>${fmtDay(iso,true)}${i>=S.detail_days?' · <em>Outlook</em>':""}</span></div>
     <div class="tt-w">${ic(s.code[i])}<span>${esc(WC[s.code[i]]||"")}</span><b class="num">${f1(s.tmax[i])}° <small>/ ${f1(s.tmin[i])}°</small></b></div>
     <div class="tt-g">${row("vs normal",`<span style="color:${an>=.05?"#E8743B":an<=-.05?"#3B82C4":"inherit"}">${an>=.05?"+":""}${(Math.round(an*10)/10).toFixed(1)}°C</span>`)}${row("Normal",s.nmax&&s.nmax[i]!=null?`${f1(s.nmax[i])}° / ${f1(s.nmin[i])}°`:"–")}${row("Rain",`${f1(s.rain[i])} mm`)}${row("Chance of rain",s.pprob[i]!=null?`${s.pprob[i]}%`:"–")}${row("Gusts",`${Math.round(s.gust[i])} mph`)}${row("Humidity",s.rh&&s.rh[i]!=null?`${Math.round(s.rh[i])}%`:"–")}${gulf||!(s.snow[i]>0)?"":row("Snow",`${f1(s.snow[i])} cm`)}</div>
     ${fl.length?`<div class="tt-f">${fl.map(a=>`<div>${aic(a.type)}<span class="pill ${a.level}">${a.level}</span><span>${esc(a.label.replace(" (outlook)",""))}<small>${esc(a.detail)}</small></span></div>`).join("")}</div>`:""}
-    <div class="tt-n">Click to show this day on the map</div>`;
+    <div class="tt-n">${note}</div>`;
   tip.hidden=false;
   const r=c.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight;
   let x=r.left+r.width/2-w/2,y=r.top-h-12,side="top";
