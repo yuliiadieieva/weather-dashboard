@@ -1,0 +1,6 @@
+{
+  // Static site: the Andrews Sykes Weather Dashboard. Files are pushed here daily by the scheduled update.
+  "name": "weather-dashboard",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "./public" }
+}
