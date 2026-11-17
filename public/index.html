@@ -1,5 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Andrews Sykes Weather Dashboard</title>
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="favicon-180.png"></head><body><title>Andrews Sykes Weather Dashboard</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Minimal SaaS layout on Andrews Sykes brand guidelines V1 (primary #004A93, navy #0B2749, sky #23A5E2, red #E2011D,
@@ -980,7 +979,8 @@ const ZPAL=["#2F6FB2","#1F9E9A","#7A5CC2","#C9822B","#3E9B5B","#B24C6B","#5A7FA8
 function zoneCol(z){const zs=[...new Set(V.depots.map(d=>d.zone))];return ZPAL[Math.max(0,zs.indexOf(z))%ZPAL.length]}
 const dAdd=(iso,n)=>{const t=new Date(iso+"T12:00");t.setDate(t.getDate()+n);return t.toISOString().slice(0,10)};
 /* count events, not locations: the same risk on consecutive days counts once per country */
-function evN(list,lvl){const by={};list.filter(a=>!lvl||a.level===lvl).forEach(a=>{const c=DEP[a.depot].country;(by[c]=by[c]||[]).push(a)});return Object.values(by).reduce((t,l)=>t+groupEvents(l).length,0)}
+/* events counted once, at their highest level: an episode with alert days at some depots and watch days at others is one alert */
+function evN(list,lvl){const by={};list.forEach(a=>{const c=DEP[a.depot].country;(by[c]=by[c]||[]).push(a)});return Object.values(by).reduce((t,l)=>t+groupEvents(l).filter(e=>!lvl||e.level===lvl).length,0)}
 function groupEvents(list){
   /* one event = one kind of weather on consecutive days, across all locations.
      Forecast flags merge by type (frost, cold day, colder than normal and cold snap are one Cold event);
@@ -1343,5 +1343,4 @@ fromHash();wireMapCtl();renderAll();
 let _rz;window.addEventListener("resize",()=>{clearTimeout(_rz);_rz=setTimeout(()=>{if(st.view!=="history")renderMap()},150)});
 window.addEventListener("hashchange",()=>{const v=st.view;if(!location.hash)return;fromHash();if(v!==st.view){st.type=null;st.sel=null;stopPlay();renderAll()}});
 </script>
-
 </body></html>
