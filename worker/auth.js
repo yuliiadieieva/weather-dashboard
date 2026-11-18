@@ -2,6 +2,7 @@
 // The password lives only in the Worker's encrypted secret PASSWORD (Cloudflare dashboard, Settings > Variables and Secrets).
 // Every request, including static files, passes through here first (assets.run_worker_first), so nothing is served without a session.
 import { LOGO } from "./logo.js";
+import { refresh, readLive, REGION } from "./live.js";
 
 const COOKIE = "wx_session";
 const SESSION_DAYS = 30;
@@ -56,6 +57,8 @@ export class Limiter {
   constructor(state) { this.state = state; }
   async fetch(req) {
     const op = new URL(req.url).pathname;
+    if (op === "/live-put") { await this.state.storage.put("live", await req.text()); return new Response("ok"); }
+    if (op === "/live-get") { const v = await this.state.storage.get("live"); return new Response(v || "null", { headers: { "Content-Type": "application/json" } }); }
     const now = Date.now() / 1000;
     let rec = (await this.state.storage.get("r")) || { n: 0, until: 0, first: now };
     if (rec.until && rec.until < now) rec = { n: 0, until: 0, first: now };
@@ -140,6 +143,14 @@ export default {
       const wantsPage = req.method === "GET" && (req.headers.get("Accept") || "").includes("text/html");
       return wantsPage ? redirect("/login") : new Response("Sign in required", { status: 401, headers: SEC });
     }
+    if (p === "/live.json") {
+      const live = REGION[env.SITE] ? await readLive(env) : null;
+      return new Response(JSON.stringify(live), { headers: { "Content-Type": "application/json", ...SEC } });
+    }
     return withSec(await env.ASSETS.fetch(req));
+  },
+  // every 20 minutes: refresh official warnings for this site's countries
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(refresh(env));
   },
 };

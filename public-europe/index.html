@@ -820,7 +820,8 @@ const fromHash=()=>{const h=location.hash.slice(1);if(h==="history")st.view="his
 const onDate=(a,iso)=>a.date===iso||(a.end&&a.date<=iso&&iso<=a.end);
 const flagsFor=(slug,date)=>V.alerts.filter(a=>a.depot===slug&&onDate(a,date)&&(!st.type||a.type===st.type));
 const lvlOf=fl=>fl.some(a=>a.level==="alert")?"alert":fl.length?"watch":"";
-const near=S.alerts.filter(a=>!a.outlook);
+let near=S.alerts.filter(a=>!a.outlook);
+let LIVE=null;  /* latest official warnings on the public sites */
 
 /* ---------- header ---------- */
 function renderHeader(){
@@ -831,7 +832,7 @@ function renderHeader(){
   const lk=c==="IT"?"IT":"UK";["UK","IT"].forEach(k=>{const l=document.getElementById("logo-"+k);if(l)l.toggleAttribute("hidden",lk!==k)});
   const dd=S.detail_days||7;
   const upd=`Updated ${g.toLocaleDateString("en-GB",{day:"numeric",month:"short"})} ${g.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})} · refreshed daily at 08:10 London time`;
-  document.getElementById("meta").innerHTML=`<span class="fr fol" title="Detailed forecast, days 1 to ${dd}. ${upd}"><i></i>Forecast <b>${fmtWDM(S.dates[0])} to ${fmtWDM(S.dates[Math.min(dd,n)-1])}</b></span><span class="m2" title="Refreshed daily at 08:10 London time">Updated <b class="num">${g.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}, ${g.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}</b></span><span id="runst">${runChip()}</span>`;
+  document.getElementById("meta").innerHTML=`<span class="fr fol" title="Detailed forecast, days 1 to ${dd}. ${upd}"><i></i>Forecast <b>${fmtWDM(S.dates[0])} to ${fmtWDM(S.dates[Math.min(dd,n)-1])}</b></span><span class="m2" title="Refreshed daily at 08:10 London time">Updated <b class="num">${g.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}, ${g.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}</b></span>${LIVE?`<span class="m2" title="Official warnings are checked every 20 minutes">Warnings <b class="num">${LIVE.fetched.slice(11)}</b></span>`:""}<span id="runst">${runChip()}</span>`;
   const nl=c?S.depots.filter(d=>d.country===c).length:st.view==="history"?0:S.depots.length;
   document.getElementById("locs").innerHTML=nl?`<span class="sep">·</span>${nl} locations`:"";
   const pool=c?V.alerts.filter(a=>!a.outlook):near,al=pool.filter(a=>a.level==="alert"),nal=evN(pool,"alert"),wa=evN(pool,"watch"),ol=evN((c?V.alerts:S.alerts).filter(a=>a.outlook)),nn=(c?V.alerts:S.alerts).filter(a=>a.new).length;
@@ -1345,6 +1346,16 @@ async function exportXlsx(dl){
 
 
 fromHash();wireMapCtl();renderAll();
+/* password-protected public sites: official warnings refreshed every 20 minutes by the site (live.json); forecast stays daily */
+(function(){if(!(window.WX_SITE&&WX_SITE.logout))return;
+  const k=a=>a.depot+"|"+a.rule+"|"+a.date,dailyOff=new Set(S.alerts.filter(a=>a.official).map(k)),base=S.alerts.filter(a=>!a.official),days=new Set(S.dates.slice(0,S.detail_days||7));
+  const apply=L=>{if(!L||!L.fetched||L.fetched<=S.generated||(LIVE&&L.fetched===LIVE.fetched))return;
+    S.warnings=L.warnings||[];if(L.floods)S.floods=L.floods;if(L.ukhsa)S.ukhsa=L.ukhsa;
+    S.alerts=base.concat((L.alerts||[]).filter(a=>days.has(a.date)&&DEP[a.depot]).map(a=>Object.assign({},a,{new:!dailyOff.has(k(a))})))
+      .sort((x,y)=>x.date.localeCompare(y.date)||((x.level!=="alert")-(y.level!=="alert"))||x.type.localeCompare(y.type)||x.depot.localeCompare(y.depot));
+    near=S.alerts.filter(a=>!a.outlook);LIVE=L;renderAll()};
+  const load=()=>fetch("live.json",{cache:"no-store",credentials:"same-origin"}).then(r=>r.ok?r.json():null).then(apply).catch(()=>{});
+  load();setInterval(load,10*60*1000)})();
 let _rz;window.addEventListener("resize",()=>{clearTimeout(_rz);_rz=setTimeout(()=>{if(st.view!=="history")renderMap()},150)});
 window.addEventListener("hashchange",()=>{const v=st.view;if(!location.hash)return;fromHash();if(v!==st.view){st.type=null;st.sel=null;stopPlay();renderAll()}});
 </script>

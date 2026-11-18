@@ -30,5 +30,10 @@
       ]
     }
   ],
-  "workers_dev": true
+  "workers_dev": true,
+  "triggers": {
+    "crons": [
+      "*/20 * * * *"
+    ]
+  }
 }

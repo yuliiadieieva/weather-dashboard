@@ -57,6 +57,7 @@ Four Cloudflare Workers serve the repo, each behind its own password (secret `PA
 - Europe: `weather-europe`, folder `public-europe/`, config `wrangler.europe.jsonc`
 - Middle East: `weather-me`, folder `public-me/`, config `wrangler.me.jsonc`
 The gate is `worker/auth.js` (login page, 30-day signed session cookie, Log out, 5 wrong attempts lock for 15 minutes). Changing a password in Cloudflare ends that site's sessions only.
+Official warnings refresh every 20 minutes on the public sites: a Cron Trigger on the ASG, UK and Europe Workers runs `worker/live.js` (same logic as fetch.py and build.py for Met Office, Meteoalarm, Environment Agency floods and UKHSA), stores the result, and the page reads `live.json` and replaces the official warnings and flags. The forecast still updates once a day. Middle East has no warning feed, so no cron. If depots change, regenerate `worker/depots.js` from `data/depots.json`.
 RULE: every change (design, template, data, scripts) is published to the artifact, the main site and all three regional sites in the same push, never to one site alone. Regional sites must never contain another region's data.
 
 ## 6. Email (only when data/email.json is not empty)
