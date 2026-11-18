@@ -1,6 +1,34 @@
+// Andrews Sykes Weather Dashboard: ASG site. Password = secret PASSWORD on this Worker (never in this file).
+// Deployed by Cloudflare Workers Builds.
 {
-  // Static site: the Andrews Sykes Weather Dashboard. Files are pushed here daily by the scheduled update.
   "name": "weather-dashboard",
+  "main": "worker/auth.js",
   "compatibility_date": "2026-11-01",
-  "assets": { "directory": "./public" }
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "vars": {
+    "SITE": "asg",
+    "TITLE": "ASG",
+    "SUBTITLE": "57 locations \u00b7 UK, Europe and Middle East"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LIMITER",
+        "class_name": "Limiter"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Limiter"
+      ]
+    }
+  ],
+  "workers_dev": true
 }

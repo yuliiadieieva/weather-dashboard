@@ -1,0 +1,34 @@
+// Andrews Sykes Weather Dashboard: Middle East site. Password = secret PASSWORD on this Worker (never in this file).
+// Deployed by Cloudflare Workers Builds with: npx wrangler deploy --config wrangler.me.jsonc.
+{
+  "name": "weather-me",
+  "main": "worker/auth.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public-me",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "vars": {
+    "SITE": "me",
+    "TITLE": "Middle East",
+    "SUBTITLE": "12 locations \u00b7 Middle East and Saudi Arabia"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LIMITER",
+        "class_name": "Limiter"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Limiter"
+      ]
+    }
+  ],
+  "workers_dev": true
+}

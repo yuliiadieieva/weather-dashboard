@@ -1,0 +1,34 @@
+// Andrews Sykes Weather Dashboard: UK site. Password = secret PASSWORD on this Worker (never in this file).
+// Deployed by Cloudflare Workers Builds with: npx wrangler deploy --config wrangler.uk.jsonc.
+{
+  "name": "weather-uk",
+  "main": "worker/auth.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public-uk",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "vars": {
+    "SITE": "uk",
+    "TITLE": "UK",
+    "SUBTITLE": "28 locations \u00b7 daily forecast and alerts"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LIMITER",
+        "class_name": "Limiter"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Limiter"
+      ]
+    }
+  ],
+  "workers_dev": true
+}

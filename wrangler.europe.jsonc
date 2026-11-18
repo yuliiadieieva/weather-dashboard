@@ -1,0 +1,34 @@
+// Andrews Sykes Weather Dashboard: Europe site. Password = secret PASSWORD on this Worker (never in this file).
+// Deployed by Cloudflare Workers Builds with: npx wrangler deploy --config wrangler.europe.jsonc.
+{
+  "name": "weather-europe",
+  "main": "worker/auth.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public-europe",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "vars": {
+    "SITE": "europe",
+    "TITLE": "Europe",
+    "SUBTITLE": "17 locations \u00b7 Italy, Netherlands, Belgium, Luxembourg, Switzerland"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LIMITER",
+        "class_name": "Limiter"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Limiter"
+      ]
+    }
+  ],
+  "workers_dev": true
+}

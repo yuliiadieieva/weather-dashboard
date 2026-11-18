@@ -1,4 +1,4 @@
-<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="favicon-180.png"></head><body><title>Andrews Sykes Weather Dashboard</title>
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="favicon-180.png"><script>window.WX_SITE={logout:true}</script></head><body><title>Andrews Sykes Weather Dashboard</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Minimal SaaS layout on Andrews Sykes brand guidelines V1 (primary #004A93, navy #0B2749, sky #23A5E2, red #E2011D,
@@ -77,6 +77,8 @@ svg.map circle.ping{fill:none;stroke:var(--accent);stroke-width:3;animation:ping
 .thbtn:hover{background:rgba(11,39,73,.3);color:#FFFFFF}
 .thbtn:focus-visible{outline:2px solid #FFFFFF}
 .thbtn svg{width:17px;height:17px}
+.logout{display:inline-flex;align-items:center;gap:6px;margin-left:6px;padding:5px 12px;border:1px solid rgba(255,255,255,.35);border-radius:99px;color:#fff;font-size:.8rem;font-weight:600;text-decoration:none;white-space:nowrap}
+.logout[hidden]{display:none}.logout:hover{background:rgba(255,255,255,.12)}.logout svg{width:14px;height:14px}
 .histbtn{justify-self:end;display:inline-flex;align-items:center;gap:8px;background:#FFFFFF;color:var(--royal);border:0;border-radius:8px;padding:8px 14px;font:700 .84rem var(--body);cursor:pointer}
 .histbtn svg{width:16px;height:16px}
 .histbtn:hover{background:#E6EEF7}
@@ -635,7 +637,7 @@ table.ht tbody tr:hover td{background:var(--surface-2)}
       </div>
       <div class="side"><div class="status" id="status" role="status"></div></div>
     </div>
-    <div class="tabrow"><nav class="tabs" id="tabs" role="tablist" aria-label="View"></nav><div class="tools"><button class="histbtn" id="histbtn" type="button"></button><button class="thbtn" id="thbtn" type="button" aria-label="Switch day or night view"></button></div></div>
+    <div class="tabrow"><nav class="tabs" id="tabs" role="tablist" aria-label="View"></nav><div class="tools"><button class="histbtn" id="histbtn" type="button"></button><button class="thbtn" id="thbtn" type="button" aria-label="Switch day or night view"></button><a class="logout" id="logoutbtn" href="/logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Log out</a></div></div>
   </header>
 
   <main id="view-overview" class="wrap" style="gap:16px" hidden>
@@ -806,13 +808,15 @@ function srcOf(a){const d=DEP[a.depot];
   if(a.rule.startsWith("ukhsa_"))return["UKHSA","https://ukhsa-dashboard.data.gov.uk/weather-health-alerts"];
   return officialFor(d)}
 
-let st={view:"ALL",q:"",metric:"tmax",day:0,type:null,sel:null,pop:null,playing:null};
+/* regional public sites hold one country only: no "All" overview there */
+const HOME=S.countries.length===1?S.countries[0]:"ALL";
+let st={view:HOME,q:"",metric:"tmax",day:0,type:null,sel:null,pop:null,playing:null};
 try{const m=localStorage.getItem("wx.metric");if(m&&METRICS[m])st.metric=m}catch(e){}
 let V;
 function setView(){if(!CTRY[st.view])return;const c=st.view;const dep=S.depots.filter(d=>d.country===c);const set=new Set(dep.map(d=>d.slug));
   V={c,depots:dep,alerts:S.alerts.filter(a=>set.has(a.depot)),warnings:S.warnings.filter(w=>w.country===c),outline:S.outline[c],rules:S.rules[c]};
   if(st.sel&&!set.has(st.sel))st.sel=null}
-const fromHash=()=>{const h=location.hash.slice(1);if(h==="history")st.view="history";else if(h==="overview"||!h)st.view="ALL";else{const k=Object.keys(CTRY).find(k=>CTRY[k].hash===h);if(k&&S.countries.includes(k))st.view=k}};
+const fromHash=()=>{const h=location.hash.slice(1);if(h==="history")st.view="history";else if(h==="overview"||!h)st.view=HOME;else{const k=Object.keys(CTRY).find(k=>CTRY[k].hash===h);if(k&&S.countries.includes(k))st.view=k}};
 const onDate=(a,iso)=>a.date===iso||(a.end&&a.date<=iso&&iso<=a.end);
 const flagsFor=(slug,date)=>V.alerts.filter(a=>a.depot===slug&&onDate(a,date)&&(!st.type||a.type===st.type));
 const lvlOf=fl=>fl.some(a=>a.level==="alert")?"alert":fl.length?"watch":"";
@@ -820,6 +824,7 @@ const near=S.alerts.filter(a=>!a.outlook);
 
 /* ---------- header ---------- */
 function renderHeader(){
+  {const lo=document.getElementById("logoutbtn");if(lo)lo.hidden=!(window.WX_SITE&&WX_SITE.logout)}
   const g=new Date(S.generated),n=S.dates.length;
   const c=CTRY[st.view]?st.view:null;
   document.getElementById("ctry").textContent=c?CTRY[c].name:st.view==="history"?"History":"All countries";
@@ -840,14 +845,14 @@ function renderHeader(){
   const tabs=document.getElementById("tabs");
   const gw=evN(near,"watch"),ga=evN(near,"alert");
   const bdg=(w,a)=>(a||w)?`<span class="sp">${a?`<span class="a" aria-label="${a} alerts">${a}</span>`:""}${w?`<span class="w" aria-label="${w} watch flags">${w}</span>`:""}</span>`:"";
-  tabs.innerHTML=`<button role="tab" data-v="ALL" aria-selected="${st.view==="ALL"}" title="All countries · next 7 days: ${gw} watch, ${ga} alerts">All${bdg(gw,ga)}</button>`+S.countries.map(k=>{const sl=new Set(S.depots.filter(d=>d.country===k).map(d=>d.slug)),fa=S.alerts.filter(a=>sl.has(a.depot)&&!a.outlook),nw=evN(fa,"watch"),na=evN(fa,"alert");
+  tabs.innerHTML=(HOME!=="ALL"?"":`<button role="tab" data-v="ALL" aria-selected="${st.view==="ALL"}" title="All countries · next 7 days: ${gw} watch, ${ga} alerts">All${bdg(gw,ga)}</button>`)+S.countries.map(k=>{const sl=new Set(S.depots.filter(d=>d.country===k).map(d=>d.slug)),fa=S.alerts.filter(a=>sl.has(a.depot)&&!a.outlook),nw=evN(fa,"watch"),na=evN(fa,"alert");
     return `<button role="tab" data-v="${k}" aria-selected="${st.view===k}" title="${sl.size} locations · next 7 days: ${nw} watch flags, ${na} alerts">${CTRY[k].name}${bdg(nw,na)}</button>`}).join("");
   {const at=tabs.querySelector('[aria-selected="true"]');if(at&&tabs.scrollWidth>tabs.clientWidth){const l=at.offsetLeft-tabs.clientWidth/2+at.offsetWidth/2;tabs.scrollLeft=Math.max(0,l)}}
   const hb=document.getElementById("histbtn"),inH=st.view==="history";
   hb.classList.toggle("on",inH);
   hb.innerHTML=inH?'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Back to forecast'
     :'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13h12M4 11V7M7.5 11V4M11 11V8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Historical data';
-  hb.onclick=()=>{const to=inH?(st.last||"ALL"):"history";if(!inH)st.last=st.view;st.view=to;st.type=null;st.sel=null;stopPlay();try{location.hash=to==="history"?"history":to==="ALL"?"overview":CTRY[to].hash}catch(e){}renderAll();window.scrollTo({top:0,behavior:"smooth"})};
+  hb.onclick=()=>{const to=inH?(st.last||HOME):"history";if(!inH)st.last=st.view;st.view=to;st.type=null;st.sel=null;stopPlay();try{location.hash=to==="history"?"history":to==="ALL"?"overview":CTRY[to].hash}catch(e){}renderAll();window.scrollTo({top:0,behavior:"smooth"})};
   s.querySelectorAll("a.jump").forEach(a=>a.onclick=e=>{e.preventDefault();if(!CTRY[st.view]){st.view=Object.keys(CTRY).find(k=>S.countries.includes(k)&&S.alerts.some(x=>!x.outlook&&DEP[x.depot].country===k))||"UK";renderAll()}st.type=null;renderControls();renderFeed();document.getElementById("flags-card").scrollIntoView({behavior:"smooth",block:"start"})});
   tabs.querySelectorAll("button").forEach(b=>b.onclick=()=>{st.view=b.dataset.v;st.type=null;st.zone=null;st.dayF=false;st.open={};st.q="";st.sel=null;stopPlay();try{location.hash=b.dataset.v==="history"?"history":b.dataset.v==="ALL"?"overview":CTRY[b.dataset.v].hash}catch(e){}renderAll()});
 }
