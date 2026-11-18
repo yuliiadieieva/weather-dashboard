@@ -1,4 +1,4 @@
-<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="favicon-180.png"><script>window.WX_SITE={logout:true}</script></head><body><title>Andrews Sykes Weather Dashboard</title>
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="favicon-180.png"><script>window.WX_SITE={logout:true,region:"UK"}</script></head><body><title>Andrews Sykes Weather Dashboard</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Minimal SaaS layout on Andrews Sykes brand guidelines V1 (primary #004A93, navy #0B2749, sky #23A5E2, red #E2011D,
@@ -643,7 +643,7 @@ table.ht tbody tr:hover td{background:var(--surface-2)}
   <main id="view-overview" class="wrap" style="gap:16px" hidden>
     <section class="kpis" id="ov-kpis" aria-label="Group key figures"></section>
     <section class="card">
-      <div class="card-h"><div><h2>All countries · next 7 days</h2><div class="sub">Click a country to open it. Outlook flags (days 8 to 15) are counted separately.</div></div></div>
+      <div class="card-h"><div><h2 id="ov-h">All countries · next 7 days</h2><div class="sub">Click a country to open it. Outlook flags (days 8 to 15) are counted separately.</div></div></div>
       <div class="tablewrap"><table class="ov" id="ov"></table></div>
     </section>
   </main>
@@ -810,6 +810,7 @@ function srcOf(a){const d=DEP[a.depot];
 
 /* regional public sites hold one country only: no "All" overview there */
 const HOME=S.countries.length===1?S.countries[0]:"ALL";
+const ALLNAME=(window.WX_SITE&&WX_SITE.region)||"All countries";  /* regional sites show their region name */
 let st={view:HOME,q:"",metric:"tmax",day:0,type:null,sel:null,pop:null,playing:null};
 try{const m=localStorage.getItem("wx.metric");if(m&&METRICS[m])st.metric=m}catch(e){}
 let V;
@@ -828,7 +829,7 @@ function renderHeader(){
   {const lo=document.getElementById("logoutbtn");if(lo)lo.hidden=!(window.WX_SITE&&WX_SITE.logout)}
   const g=new Date(S.generated),n=S.dates.length;
   const c=CTRY[st.view]?st.view:null;
-  document.getElementById("ctry").textContent=c?CTRY[c].name:st.view==="history"?"History":"All countries";
+  document.getElementById("ctry").textContent=c?CTRY[c].name:st.view==="history"?"History":ALLNAME;
   const lk=c==="IT"?"IT":"UK";["UK","IT"].forEach(k=>{const l=document.getElementById("logo-"+k);if(l)l.toggleAttribute("hidden",lk!==k)});
   const dd=S.detail_days||7;
   const upd=`Updated ${g.toLocaleDateString("en-GB",{day:"numeric",month:"short"})} ${g.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})} · refreshed daily at 08:10 London time`;
@@ -1345,6 +1346,7 @@ async function exportXlsx(dl){
 }
 
 
+document.getElementById("ov-h").textContent=ALLNAME+" · next 7 days";
 fromHash();wireMapCtl();renderAll();
 /* password-protected public sites: official warnings refreshed every 20 minutes by the site (live.json); forecast stays daily */
 (function(){if(!(window.WX_SITE&&WX_SITE.logout))return;
