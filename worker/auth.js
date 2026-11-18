@@ -102,7 +102,7 @@ button.go:hover{background:#2f7fd6}button.go:disabled{opacity:.5;cursor:not-allo
 <button class="eye" type="button" aria-label="Show password" onclick="var i=document.getElementById('pw');i.type=i.type==='password'?'text':'password'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
 ${error || note ? `<div class="msg" role="alert"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#E5484D"/><path d="M12 7v6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17" r="1.3" fill="#fff"/></svg>${esc(error || note)}</div>` : ""}
 <button class="go" type="submit" ${note ? "disabled" : ""}>Sign in</button>
-<div class="foot">You stay signed in on this device for ${SESSION_DAYS} days.<br>No access? Contact Yuliia Dieieva, Marketing.</div></form></main></body></html>`;
+<div class="foot">You stay signed in on this device for ${SESSION_DAYS} days.</div></form></main></body></html>`;
   return new Response(html, {
     status,
     headers: { "Content-Type": "text/html; charset=utf-8", ...SEC,
