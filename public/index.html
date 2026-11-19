@@ -77,6 +77,15 @@ svg.map circle.ping{fill:none;stroke:var(--accent);stroke-width:3;animation:ping
 .thbtn:hover{background:rgba(11,39,73,.3);color:#FFFFFF}
 .thbtn:focus-visible{outline:2px solid #FFFFFF}
 .thbtn svg{width:17px;height:17px}
+.sitesbtn{display:inline-flex;align-items:center;justify-content:center;background:transparent;color:#D3E0EE;border:0;padding:8px;border-radius:8px;cursor:pointer}.sitesbtn[hidden]{display:none}
+.sitesbtn:hover,.sitesbtn[aria-expanded="true"]{background:rgba(255,255,255,.12);color:#fff}.sitesbtn svg{width:18px;height:18px}
+.sitesmenu{position:fixed;z-index:60;width:330px;background:#fff;color:#0B2749;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:8px;font:500 .86rem var(--body)}
+.sitesmenu[hidden]{display:none}
+.sitesmenu a{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;color:inherit;text-decoration:none}
+.sitesmenu a:hover,.sitesmenu a:focus-visible{background:#EEF4FB;outline:none}.sitesmenu .ic{width:28px;height:28px;border-radius:8px;background:#E6EEF8;color:#004A93;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.68rem}
+.sitesmenu b{display:block;font-weight:700}.sitesmenu small{display:block;color:#6B7F99;font-size:.74rem;margin-top:1px;overflow-wrap:anywhere}
+.sitesmenu .ext{width:14px;height:14px;color:#6B7F99}
+
 .logout{display:inline-flex;align-items:center;gap:6px;margin-left:6px;padding:5px 12px;border:1px solid rgba(255,255,255,.35);border-radius:99px;color:#fff;font-size:.8rem;font-weight:600;text-decoration:none;white-space:nowrap}
 .logout[hidden]{display:none}.logout:hover{background:rgba(255,255,255,.12)}.logout svg{width:14px;height:14px}
 .histbtn{justify-self:end;display:inline-flex;align-items:center;gap:8px;background:#FFFFFF;color:var(--royal);border:0;border-radius:8px;padding:8px 14px;font:700 .84rem var(--body);cursor:pointer}
@@ -637,7 +646,7 @@ table.ht tbody tr:hover td{background:var(--surface-2)}
       </div>
       <div class="side"><div class="status" id="status" role="status"></div></div>
     </div>
-    <div class="tabrow"><nav class="tabs" id="tabs" role="tablist" aria-label="View"></nav><div class="tools"><button class="histbtn" id="histbtn" type="button"></button><button class="thbtn" id="thbtn" type="button" aria-label="Switch day or night view"></button><a class="logout" id="logoutbtn" href="/logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Log out</a></div></div>
+    <div class="tabrow"><nav class="tabs" id="tabs" role="tablist" aria-label="View"></nav><div class="tools"><button class="sitesbtn" id="sitesbtn" type="button" aria-label="Public sites" title="Public sites" aria-haspopup="true" aria-expanded="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></button><button class="histbtn" id="histbtn" type="button"></button><button class="thbtn" id="thbtn" type="button" aria-label="Switch day or night view"></button><a class="logout" id="logoutbtn" href="/logout" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Log out</a></div></div>
   </header>
 
   <main id="view-overview" class="wrap" style="gap:16px" hidden>
@@ -1348,6 +1357,19 @@ async function exportXlsx(dl){
 
 document.getElementById("ov-h").textContent=ALLNAME+" · next 7 days";
 fromHash();wireMapCtl();renderAll();
+/* admin copy only (Claude artifact): links to the four password-protected public sites */
+(function(){if(window.WX_SITE)return;const b=document.getElementById("sitesbtn");if(!b)return;b.hidden=false;
+  const ext='<svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  const SITES=[["ASG","All regions","weather-dashboard"],["UK","UK","weather-uk"],["EU","Europe","weather-europe"],["ME","Middle East","weather-me"]];
+  const m=document.createElement("div");m.className="sitesmenu";m.id="sitesmenu";m.hidden=true;m.setAttribute("role","menu");
+  m.innerHTML=SITES.map(([ic,n,h])=>`<a role="menuitem" href="https://${h}.andrewssykes.workers.dev/" target="_blank" rel="noopener"><span class="ic">${ic}</span><span><b>${n}</b><small>${h}.andrewssykes.workers.dev</small></span>${ext}</a>`).join("");
+  document.body.appendChild(m);
+  const place=()=>{const r=b.getBoundingClientRect(),w=Math.min(330,innerWidth-24);m.style.width=w+"px";m.style.top=(r.bottom+8)+"px";m.style.left=Math.max(12,Math.min(r.right-w,innerWidth-w-12))+"px"};
+  const close=()=>{m.hidden=true;b.setAttribute("aria-expanded","false")};
+  b.addEventListener("click",e=>{e.stopPropagation();if(m.hidden){place();m.hidden=false;b.setAttribute("aria-expanded","true")}else close()});
+  document.addEventListener("click",e=>{if(!m.hidden&&!m.contains(e.target))close()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
+  addEventListener("resize",close);addEventListener("scroll",close,{passive:true});})();
 /* password-protected public sites: official warnings refreshed every 20 minutes by the site (live.json); forecast stays daily */
 (function(){if(!(window.WX_SITE&&WX_SITE.logout))return;
   const k=a=>a.depot+"|"+a.rule+"|"+a.date,dailyOff=new Set(S.alerts.filter(a=>a.official).map(k)),base=S.alerts.filter(a=>!a.official),days=new Set(S.dates.slice(0,S.detail_days||7));
